@@ -14,3 +14,9 @@ export const signUpSchema = z.object({
 export const roomSchema = z.object({
   name: z.string().min(1),
 });
+
+export const wsMethods = {
+  JOIN_ROOM: "JOIN_ROOM",
+  CHAT: "CHAT",
+  LEAVE_ROOM: "LEAVE_ROOM",
+};
