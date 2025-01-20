@@ -29,14 +29,15 @@ model Room{
   admin String
   user User @relation(fields: [admin],references: [id])
   messages Message[]
+  createdAt DateTime @default(now())
 }
 
 model Message {
   id        Int   @id @default(autoincrement())
-  content  String
-  createdAt DateTime @default(now())
+  content   String
   senderId  String
   sender    User    @relation(fields: [senderId], references: [id])
-  roomId String
-  room Room @relation(fields: [roomId],references: [id])
+  roomId    String
+  room      Room @relation(fields: [roomId],references: [id])
+  createdAt DateTime @default(now())
 }
