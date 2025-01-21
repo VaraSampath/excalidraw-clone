@@ -12,17 +12,19 @@ type TUser = {
 
 const users: TUser[] = [];
 
-const getUser = (token: string): string | null => {
+const getUser = async (token: string) => {
   if (!token) {
     return null;
   }
   try {
-    const decoded = jwt.verify(token, SECRET_KEY);
+    const decoded = await jwt.verify(token, SECRET_KEY);
+
     if (typeof decoded === "string") {
       return null;
     }
     return decoded.id;
   } catch (error) {
+    console.log(error);
     return null;
   }
 };
@@ -30,13 +32,13 @@ const getUser = (token: string): string | null => {
 wss.on("connection", async (ws, req) => {
   const url = new URLSearchParams(req?.url?.split("?")[1] ?? "");
   const token = url.get("token");
-  console.log(token, "token");
 
   try {
     if (token) {
-      const userId = getUser(token);
-      console.log(userId, "userId");
+      const userId = await getUser(JSON.parse(token));
+
       if (userId === null) {
+        ws.close();
         return null;
       }
       ws.on("message", (data) => {
@@ -51,8 +53,11 @@ wss.on("connection", async (ws, req) => {
         }
         if (parsedData.method === wsMethods.CHAT) {
           const { roomId, message } = parsedData;
-          const user = users.find((user) => user.rooms.includes(roomId));
-          if (user) {
+          const filteredUsers = users.filter((user) =>
+            user.rooms.includes(roomId)
+          );
+
+          for (const user of filteredUsers) {
             user.ws.send(JSON.stringify({ method: wsMethods.CHAT, message }));
           }
         }
