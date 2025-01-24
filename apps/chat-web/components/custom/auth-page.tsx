@@ -2,20 +2,43 @@
 import { useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "../ui/card";
 
-import { Mail, ArrowRight, Lock } from "lucide-react";
+import { Mail, ArrowRight, Lock, User } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import Link from "next/link";
+import axios from "axios";
+import { useRouter } from "next/navigation";
+import { signInUser } from "@/actions";
 
 const AuthPage = ({ type }: { type: "signin" | "signup" }) => {
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle sign in logic here
-    console.log("Sign in attempt with:", { email, password });
+    try {
+      if (type === "signin") {
+        const data = await signInUser({ email, password });
+        if (data) {
+          router.push("/");
+        }
+      }
+      if (type === "signup") {
+        const { data } = await axios.post("http://localhost:3005/signup", {
+          username,
+          email,
+          password,
+        });
+        if (data.id) {
+          router.push("/signin");
+        }
+      }
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
@@ -34,6 +57,23 @@ const AuthPage = ({ type }: { type: "signin" | "signup" }) => {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
+            {type === "signup" && (
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="username"
+                    type="username"
+                    placeholder="Jhon Doe"
+                    className="pl-9"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">

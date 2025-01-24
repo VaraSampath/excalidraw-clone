@@ -35,7 +35,7 @@ wss.on("connection", async (ws, req) => {
 
   try {
     if (token) {
-      const userId = await getUser(JSON.parse(token));
+      const userId = await getUser(token);
 
       if (userId === null) {
         ws.close();
@@ -45,20 +45,31 @@ wss.on("connection", async (ws, req) => {
         const parsedData = JSON.parse(data as unknown as string);
         if (parsedData.method === wsMethods.JOIN_ROOM) {
           const { roomId } = parsedData;
-          users.push({
-            ws,
-            rooms: [roomId],
-            userId,
-          });
+          const user = users.find((user) => user.userId === userId);
+          if (user) {
+            user.rooms.push(roomId);
+          } else {
+            users.push({
+              ws,
+              rooms: [roomId],
+              userId,
+            });
+          }
         }
         if (parsedData.method === wsMethods.CHAT) {
-          const { roomId, message } = parsedData;
+          const { roomId, content } = parsedData;
           const filteredUsers = users.filter((user) =>
             user.rooms.includes(roomId)
           );
 
           for (const user of filteredUsers) {
-            user.ws.send(JSON.stringify({ method: wsMethods.CHAT, message }));
+            user.ws.send(
+              JSON.stringify({
+                method: wsMethods.CHAT,
+                roomId,
+                content,
+              })
+            );
           }
         }
         if (parsedData.method === wsMethods.LEAVE_ROOM) {

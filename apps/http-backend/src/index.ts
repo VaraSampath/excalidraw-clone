@@ -5,7 +5,11 @@ import { SECRET_KEY } from "@repo/backend-common/config";
 import jwt from "jsonwebtoken";
 import { prisma as db } from "@repo/db/db";
 import bcrypt from "bcrypt";
+import cors from "cors";
+import cookieParser from "cookie-parser";
 const app = express();
+app.use(cookieParser());
+app.use(cors());
 app.use(express.json());
 
 app.post("/signup", async (req, res) => {
@@ -65,6 +69,7 @@ app.post("/signin", async (req, res) => {
 
     // Send a successful response
     const token = jwt.sign({ id: user.id, name: user.name }, SECRET_KEY);
+
     res.status(200).send({ token });
     return;
   } catch (error) {
@@ -98,6 +103,41 @@ app.post("/room", middleware, async (req, res) => {
   }
 });
 
-app.listen(3001, () => {
+app.get("/get-rooms", middleware, async (req, res) => {
+  try {
+    const rooms = await db.room.findMany({
+      where: {
+        admin: req.userId,
+      },
+    });
+    res.status(200).send(rooms);
+  } catch (error) {
+    res.status(500).send("An error occurred while fetching the rooms");
+  }
+});
+
+app.get("/get-room-chat", middleware, async (req, res) => {
+  const roomId = req.query.roomId as string;
+
+  try {
+    const room = await db.room.findUnique({
+      where: {
+        id: roomId,
+      },
+      include: {
+        messages: true,
+      },
+    });
+    if (!room) {
+      res.status(404).send("Room not found");
+      return;
+    }
+    res.status(200).send(room);
+  } catch (error) {
+    res.status(500).send("An error occurred while fetching the room");
+  }
+});
+
+app.listen(3005, () => {
   console.log("http server running on 3001");
 });
