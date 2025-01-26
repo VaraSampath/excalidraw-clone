@@ -4,13 +4,7 @@ import { SECRET_KEY } from "@repo/backend-common/config";
 import { wsMethods } from "@repo/common/types";
 const wss = new WebSocketServer({ port: 8080 });
 
-type TUser = {
-  ws: WebSocket;
-  userId: string;
-  rooms: string[];
-};
-
-const users: TUser[] = [];
+const rooms = new Map<string, { ws: WebSocket; userId: string }[]>();
 
 const getUser = async (token: string) => {
   if (!token) {
@@ -43,26 +37,19 @@ wss.on("connection", async (ws, req) => {
       }
       ws.on("message", (data) => {
         const parsedData = JSON.parse(data as unknown as string);
+        console.log(parsedData);
+
         if (parsedData.method === wsMethods.JOIN_ROOM) {
           const { roomId } = parsedData;
-          const user = users.find((user) => user.userId === userId);
-          if (user) {
-            user.rooms.push(roomId);
-          } else {
-            users.push({
-              ws,
-              rooms: [roomId],
-              userId,
-            });
+          if (!rooms.has(roomId)) {
+            rooms.set(roomId, []);
           }
+          rooms.get(roomId)?.push({ ws, userId });
         }
         if (parsedData.method === wsMethods.CHAT) {
           const { roomId, content } = parsedData;
-          const filteredUsers = users.filter((user) =>
-            user.rooms.includes(roomId)
-          );
-
-          for (const user of filteredUsers) {
+          const room = rooms.get(roomId) ?? [];
+          for (const user of room) {
             user.ws.send(
               JSON.stringify({
                 method: wsMethods.CHAT,
@@ -72,12 +59,26 @@ wss.on("connection", async (ws, req) => {
             );
           }
         }
-        if (parsedData.method === wsMethods.LEAVE_ROOM) {
-          const { roomId } = parsedData;
-          const user = users.find((user) => user.rooms.includes(roomId));
-          if (user) {
-            user.rooms = user.rooms.filter((room) => room !== roomId);
+        if (parsedData.method === wsMethods.DRAW) {
+          const { roomId, content } = parsedData;
+          const room = rooms.get(roomId) ?? [];
+          for (const user of room) {
+            user.ws.send(
+              JSON.stringify({
+                method: wsMethods.DRAW,
+                roomId,
+                content,
+              })
+            );
           }
+        }
+        if (parsedData.method === wsMethods.LEAVE_ROOM) {
+          const { roomId, userId } = parsedData;
+          const room = rooms.get(roomId) ?? [];
+          rooms.set(
+            roomId,
+            room.filter((user) => user.userId !== userId)
+          );
         }
       });
     } else {

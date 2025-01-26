@@ -4,8 +4,10 @@ import useSocket from "@/hooks/useSocket";
 import { wsMessage } from "@/types";
 import { useEffect, useState } from "react";
 import { wsMethods } from "@repo/common/types";
-import { Input } from "../ui/input";
-import { Button } from "../ui/button";
+import CanvasPaint from "./CanvasPaint";
+import Chats from "./chats";
+import { parseFromWsMessage, parseToWsMessage } from "@/utils";
+import useDrawingStore from "@/store/drawing-store";
 
 type pageProps = {
   token: string;
@@ -15,16 +17,7 @@ type pageProps = {
 const ChatRoom = (props: pageProps) => {
   const [messages, setMessages] = useState<wsMessage[]>(props.messages || []);
   const [ws, loading] = useSocket(`ws://localhost:8080/?token=${props.token}`);
-  const [chatInput, setChatInput] = useState("");
-  const sendMessage = () => {
-    ws?.send(
-      JSON.stringify({
-        method: wsMethods.CHAT,
-        roomId: props.roomId,
-        content: chatInput,
-      })
-    );
-  };
+
   useEffect(() => {
     (async () => {
       if (!ws || loading) {
@@ -35,12 +28,23 @@ const ChatRoom = (props: pageProps) => {
           JSON.stringify({ method: wsMethods.JOIN_ROOM, roomId: props.roomId })
         );
         ws.onmessage = (event) => {
-          console.log("event", event.data);
           const data = JSON.parse(event.data);
           if (data.method === wsMethods.CHAT) {
-            console.log(data, "data");
-
             setMessages((prev) => [...prev, data]);
+          }
+        };
+        ws.onmessage = (event) => {
+          const data = parseFromWsMessage(event.data);
+          if (data.method === wsMethods.DRAW) {
+            const { x1, y1, x2, y2 } = data.content;
+            const canvas = document.querySelector("canvas");
+            const ctx = canvas?.getContext("2d");
+            if (ctx) {
+              ctx.beginPath();
+              ctx.moveTo(x1, y1);
+              ctx.lineTo(x2, y2);
+              ctx.stroke();
+            }
           }
         };
       };
@@ -52,23 +56,17 @@ const ChatRoom = (props: pageProps) => {
   }
 
   return (
-    <>
-      {messages?.map((message) => (
-        <div key={message.content}>
-          <p>{message?.content}</p>
-        </div>
-      ))}
-      <Input
-        type="text"
-        onChange={(e) => setChatInput(e.target.value)}
+    <div className="relative">
+      <CanvasPaint
+        roomId={props.roomId}
+        ws={ws}
       />
-      <Button
-        variant={"default"}
-        onClick={sendMessage}
-      >
-        Send
-      </Button>
-    </>
+      <Chats
+        roomId={props.roomId}
+        ws={ws}
+        chats={messages}
+      />
+    </div>
   );
 };
 
