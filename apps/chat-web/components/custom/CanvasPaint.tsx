@@ -1,6 +1,6 @@
 "use client";
 
-import useDrawingStore from "@/store/drawing-store";
+import { useDrawingStore } from "@/store/drawing-store";
 import { resizeCanvas, startFreePencil } from "@/utils";
 import { useEffect, useRef } from "react";
 
@@ -13,7 +13,6 @@ const CanvasPaint = ({
   ws: WebSocket;
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const drawings = useDrawingStore((state) => state.drawings);
   const populateDrawings = useDrawingStore.getState().increase;
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -28,8 +27,8 @@ const CanvasPaint = ({
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
 
-    startFreePencil(canvas, drawings, ws, roomId);
-  }, [drawings, populateDrawings, roomId, ws]);
+    startFreePencil(canvas, ws, roomId);
+  }, [populateDrawings, roomId, ws]);
 
   useEffect(() => {
     if (!canvasRef.current) return;

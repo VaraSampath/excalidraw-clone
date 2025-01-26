@@ -1,3 +1,5 @@
+import { wsMethods } from "@repo/common/types";
+
 export function drawLine(
   x1: number,
   y1: number,
@@ -15,7 +17,6 @@ export function drawLine(
 }
 export function startFreePencil(
   canvas: HTMLCanvasElement,
-  drawings: { x1: number; y1: number; x2: number; y2: number }[],
   ws: WebSocket,
   roomId: string
 ) {
@@ -73,7 +74,7 @@ export function parseToWsMessage(
 }
 export function parseFromWsMessage(message: string) {
   const parsedMessage = JSON.parse(message);
-  if (parsedMessage.content) {
+  if (parsedMessage.method === wsMethods.DRAW) {
     parsedMessage.content = JSON.parse(parsedMessage.content);
   }
   return parsedMessage;

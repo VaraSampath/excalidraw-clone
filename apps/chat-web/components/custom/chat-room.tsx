@@ -6,8 +6,7 @@ import { useEffect, useState } from "react";
 import { wsMethods } from "@repo/common/types";
 import CanvasPaint from "./CanvasPaint";
 import Chats from "./chats";
-import { parseFromWsMessage, parseToWsMessage } from "@/utils";
-import useDrawingStore from "@/store/drawing-store";
+import { parseFromWsMessage } from "@/utils";
 
 type pageProps = {
   token: string;
@@ -28,13 +27,11 @@ const ChatRoom = (props: pageProps) => {
           JSON.stringify({ method: wsMethods.JOIN_ROOM, roomId: props.roomId })
         );
         ws.onmessage = (event) => {
-          const data = JSON.parse(event.data);
+          let data = JSON.parse(event.data);
           if (data.method === wsMethods.CHAT) {
             setMessages((prev) => [...prev, data]);
           }
-        };
-        ws.onmessage = (event) => {
-          const data = parseFromWsMessage(event.data);
+          data = parseFromWsMessage(event.data);
           if (data.method === wsMethods.DRAW) {
             const { x1, y1, x2, y2 } = data.content;
             const canvas = document.querySelector("canvas");

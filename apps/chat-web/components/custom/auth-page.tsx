@@ -10,7 +10,7 @@ import Link from "next/link";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { signInUser } from "@/actions";
-
+import jwt from "jsonwebtoken";
 const AuthPage = ({ type }: { type: "signin" | "signup" }) => {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -23,6 +23,8 @@ const AuthPage = ({ type }: { type: "signin" | "signup" }) => {
       if (type === "signin") {
         const data = await signInUser({ email, password });
         if (data) {
+          const details = await jwt.decode(data);
+          localStorage.setItem("user", JSON.stringify(details));
           router.push("/");
         }
       }

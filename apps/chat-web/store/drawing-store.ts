@@ -1,4 +1,4 @@
-import { create, ExtractState, useStore } from "zustand";
+import { create } from "zustand";
 
 interface DrawState {
   drawings: { x1: number; y1: number; x2: number; y2: number }[];
@@ -12,11 +12,21 @@ interface DrawState {
     y2: number;
   }) => void;
 }
+
+interface User {
+  name: string;
+  id: string;
+}
 const useDrawingStore = create<DrawState>((set) => ({
   drawings: [],
   increase: (by) => set((state) => ({ drawings: [...state.drawings, by] })),
 }));
 
-export type storeState = ExtractState<typeof useStore>;
+const useUserStore = create<User>((set) => ({
+  name: "",
+  id: "",
+  setName: (name: string) => set(() => ({ name })),
+  setId: (id: string) => set(() => ({ id })),
+}));
 
-export default useDrawingStore;
+export { useDrawingStore, useUserStore };
